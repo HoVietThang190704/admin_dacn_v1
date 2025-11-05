@@ -1,6 +1,5 @@
 // API client for BE_DACN_v1 backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 class ApiClient {
   private baseURL: string
 
@@ -114,7 +113,7 @@ class ApiClient {
     if (params?.page) query.append('page', params.page.toString())
     if (params?.limit) query.append('limit', params.limit.toString())
     if (params?.category) query.append('category', params.category)
-    if (params?.search) query.append('search', params.search)
+    if (params?.search) query.append('q', params.search)
 
     return this.request(`/products?${query}`)
   }

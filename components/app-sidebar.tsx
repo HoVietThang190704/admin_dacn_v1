@@ -77,6 +77,16 @@ const data = {
       url: "/admin/analytics",
       icon: BarChart3,
     },
+    {
+      title: "Quản lý tài khoản vi phạm",
+      url: "/admin/violations",
+      icon: Bot,
+    },
+    {
+      title: "Quản lý livestream",
+      url: "/admin/livestreams",
+      icon: AudioWaveform,
+    },
   ],
   projects: [
     {
