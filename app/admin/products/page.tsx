@@ -36,7 +36,6 @@
   interface Product {
     id: string
     name: string
-    nameEn: string
     description: string
     price: number
     originalPrice?: number
@@ -52,6 +51,7 @@
   }
 
   export default function ProductsPage() {
+    // Đã xóa state và effect liên quan đến hình ảnh
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
@@ -66,7 +66,6 @@
     // Form data
     const [formData, setFormData] = useState({
       name: "",
-      nameEn: "",
       description: "",
       price: 0,
       originalPrice: 0,
@@ -75,6 +74,7 @@
       isActive: true,
       isFeatured: false,
     })
+  // ...existing code...
 
     // Categories for dropdown
     const [categories, setCategories] = useState<Array<{id: string, name: string}>>([])
@@ -136,7 +136,6 @@
     const handleAddProduct = () => {
       setFormData({
         name: "",
-        nameEn: "",
         description: "",
         price: 0,
         originalPrice: 0,
@@ -145,13 +144,14 @@
         isActive: true,
         isFeatured: false,
       })
+  // Đã xóa logic reset hình ảnh
+  // ...existing code...
       setIsAddModalOpen(true)
     }
 
     const handleEditProduct = (product: Product) => {
       setFormData({
         name: product.name,
-        nameEn: product.nameEn,
         description: product.description,
         price: product.price,
         originalPrice: product.originalPrice || 0,
@@ -160,6 +160,8 @@
         isActive: product.isActive,
         isFeatured: product.isFeatured,
       })
+  // Đã xóa logic reset hình ảnh
+  // ...existing code...
       setEditingProduct(product)
       setIsEditModalOpen(true)
     }
@@ -183,7 +185,6 @@
         // Chuẩn hóa dữ liệu gửi lên backend
         const payload = {
           name: formData.name,
-          nameEn: formData.nameEn,
           description: formData.description,
           price: formData.price,
           originalPrice: formData.originalPrice,
@@ -192,19 +193,24 @@
           isActive: formData.isActive,
           isFeatured: formData.isFeatured,
         }
+        let productId = null
         if (editingProduct) {
-          // Update product
+          // Sửa sản phẩm
           await apiClient.updateProduct(editingProduct.id, payload)
+          productId = editingProduct.id
           setIsEditModalOpen(false)
         } else {
-          // Add new product
-          await apiClient.createProduct(payload)
+          // Thêm sản phẩm mới
+          const res = await apiClient.createProduct(payload)
+          productId = res.data?.id || res.data?._id
           setIsAddModalOpen(false)
         }
+        // Đã xóa bước upload hình ảnh
+        // Sau khi upload, cập nhật lại danh sách sản phẩm
         fetchProducts()
       } catch (error) {
-        console.error('Failed to save product:', error)
-        // For demo, update local state
+        console.error('Lưu sản phẩm thất bại:', error)
+        // Nếu lỗi, cập nhật local state cho demo
         if (editingProduct) {
           setProducts(products.map(p =>
             p.id === editingProduct.id
@@ -260,7 +266,6 @@
                 />
               </div>
             </div>
-
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -307,9 +312,6 @@
                         <TableCell>
                           <div>
                             <div className="font-medium">{product.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {product.nameEn}
-                            </div>
                           </div>
                         </TableCell>
                         <TableCell>{product.category.name}</TableCell>
@@ -356,7 +358,6 @@
                 </TableBody>
               </Table>
             </div>
-
             {/* Pagination */}
             <div className="flex items-center justify-between space-x-2 py-4">
               <div className="text-sm text-muted-foreground">
@@ -403,18 +404,6 @@
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="nameEn" className="text-right">
-                    English Name
-                  </Label>
-                  <Input
-                    id="nameEn"
-                    value={formData.nameEn}
-                    onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
                     className="col-span-3"
                     required
                   />
@@ -484,6 +473,8 @@
                     required
                   />
                 </div>
+                {/* Trường upload hình ảnh */}
+                {/* Đã xóa trường upload hình ảnh */}
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="isActive" className="text-right">
                     Active
@@ -539,18 +530,6 @@
                     id="edit-name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-nameEn" className="text-right">
-                    English Name
-                  </Label>
-                  <Input
-                    id="edit-nameEn"
-                    value={formData.nameEn}
-                    onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
                     className="col-span-3"
                     required
                   />
@@ -620,10 +599,12 @@
                     required
                   />
                 </div>
+                {/* Trường upload hình ảnh */}
+                {/* Đã xóa trường upload hình ảnh */}
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-isActive" className="text-right">
                     Active
-                  </Label>x
+                  </Label>
                   <Select value={formData.isActive.toString()} onValueChange={(value) => setFormData({ ...formData, isActive: value === 'true' })}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue />
