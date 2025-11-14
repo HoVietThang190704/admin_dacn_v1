@@ -1,62 +1,103 @@
+
 "use client";
-import React from "react";
+import React, { useState } from "react";
+import { apiClient } from "@/lib/api";
 
-const mockViolations = [
-  {
-    id: 1,
-    name: "Nguyen Van A",
-    email: "a@example.com",
-    reason: "Spam bình luận",
-    date: "2025-10-01",
-    status: "Đã xử lý",
-  },
-  {
-    id: 2,
-    name: "Tran Thi B",
-    email: "b@example.com",
-    reason: "Phát tán nội dung cấm",
-    date: "2025-10-10",
-    status: "Chưa xử lý",
-  },
-  {
-    id: 3,
-    name: "Le Van C",
-    email: "c@example.com",
-    reason: "Lừa đảo",
-    date: "2025-09-25",
-    status: "Đã xử lý",
-  },
-];
+export default function NotificationPage() {
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [target, setTarget] = useState("user");
+  const [targetId, setTargetId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState("");
 
-export default function ViolationAccountsPage() {
+  // Gửi thông báo cho một người dùng
+  const handleSend = async () => {
+    setLoading(true);
+    setResult("");
+    try {
+      await apiClient.sendNotificationToUser({
+        audience: "user",
+        targetId: targetId,
+        title,
+        message,
+        type:"system"
+      });
+      setResult("Đã gửi thông báo!");
+    } catch (err) {
+      setResult("Gửi thất bại!");
+    }
+    setLoading(false);
+  };
+
+
+  // Broadcast thông báo cho tất cả
+  const handleBroadcast = async () => {
+    setLoading(true);
+    setResult("");
+    try {
+      await apiClient.broadcastNotification({
+        audience: target === "user" ? "all_users" : "all_shops",
+        title,
+        message,
+      });
+      setResult("Đã broadcast thông báo!");
+    } catch (err) {
+      setResult("Broadcast thất bại!");
+    }
+    setLoading(false);
+  };
+
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Danh sách tài khoản vi phạm</h1>
-      <div className="overflow-x-auto">
-        <table className="min-w-full border text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border px-4 py-2">ID</th>
-              <th className="border px-4 py-2">Tên</th>
-              <th className="border px-4 py-2">Email</th>
-              <th className="border px-4 py-2">Lý do vi phạm</th>
-              <th className="border px-4 py-2">Ngày vi phạm</th>
-              <th className="border px-4 py-2">Trạng thái</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mockViolations.map((user) => (
-              <tr key={user.id}>
-                <td className="border px-4 py-2">{user.id}</td>
-                <td className="border px-4 py-2">{user.name}</td>
-                <td className="border px-4 py-2">{user.email}</td>
-                <td className="border px-4 py-2">{user.reason}</td>
-                <td className="border px-4 py-2">{user.date}</td>
-                <td className="border px-4 py-2">{user.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="p-6 max-w-xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Gửi thông báo cho người dùng</h1>
+      <div className="space-y-4">
+        <input
+          className="border px-3 py-2 w-full rounded"
+          placeholder="Tiêu đề thông báo"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+        />
+        <textarea
+          className="border px-3 py-2 w-full rounded"
+          placeholder="Nội dung thông báo"
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+        />
+        <input
+          className="border px-3 py-2 w-full rounded"
+          placeholder="ID người dùng (gửi riêng)"
+          value={targetId}
+          onChange={e => setTargetId(e.target.value)}
+        />
+        <div className="flex items-center gap-4">
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            onClick={handleSend}
+            disabled={loading || !targetId}
+          >
+            Gửi cho 1 người dùng
+          </button>
+          <select
+            className="border px-2 py-1 rounded"
+            value={target}
+            onChange={e => setTarget(e.target.value)}
+          >
+            <option value="user">Tất cả người dùng</option>
+            <option value="shop">Tất cả shop</option>
+          </select>
+          <button
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+            onClick={handleBroadcast}
+            disabled={loading}
+          >
+            Broadcast thông báo
+          </button>
+        </div>
+        {result && (
+          <div className="mt-2 text-sm text-green-700">{result}</div>
+        )}
       </div>
     </div>
   );

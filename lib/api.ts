@@ -1,6 +1,13 @@
+// ...existing code...
 // API client for BE_DACN_v1 backend
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 class ApiClient {
+  // Livestreams API
+  async getLivestreams(params?: { status?: string }) {
+    const query = new URLSearchParams();
+    if (params?.status) query.append('status', params.status);
+    return this.request(`/livestreams?${query}`);
+  }
   // Upload product images (multipart/form-data)
   async uploadProductImages(productId: string, formDataImg: FormData) {
     const url = `${this.baseURL}/products/${productId}/images`
@@ -210,6 +217,31 @@ class ApiClient {
   // Dashboard stats
   async getDashboardStats() {
     return this.request('/admin/stats')
+  }
+
+  // Notifications API
+  async sendNotificationToUser(data: {
+    audience: 'user',
+    targetId: string,
+    title: string,
+    message: string,
+    type?: string
+  }) {
+    return this.request('/notifications/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async broadcastNotification(data: {
+    audience: 'all_users' | 'all_shops',
+    title: string,
+    message: string
+  }) {
+    return this.request('/notifications/broadcast', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
   }
 }
 

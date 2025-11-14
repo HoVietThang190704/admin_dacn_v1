@@ -17,6 +17,7 @@ import {
   ShoppingCart,
   BarChart3,
   Home,
+  Bell,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -78,9 +79,9 @@ const data = {
       icon: BarChart3,
     },
     {
-      title: "Quản lý tài khoản vi phạm",
+      title: "Thông báo",
       url: "/admin/violations",
-      icon: Bot,
+      icon: Bell,
     },
     {
       title: "Quản lý livestream",
