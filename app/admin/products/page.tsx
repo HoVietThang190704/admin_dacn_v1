@@ -89,6 +89,17 @@ import { Button } from "@/components/ui/button"
     })
   // ...existing code...
 
+    // Hàm xóa ảnh sản phẩm
+    const handleDeleteProductImage = async (productId: string, imageUrl: string) => {
+      try {
+        await apiClient.deleteProductImage(productId, imageUrl)
+        // Xóa ảnh khỏi state editingProduct
+        setEditingProduct(prev => prev ? { ...prev, images: prev.images.filter(i => i !== imageUrl) } : prev)
+      } catch (error) {
+        console.error('Xóa ảnh thất bại:', error)
+      }
+    }
+
   // Categories dạng cây (có children)
   const [categories, setCategories] = useState<Array<any>>([])
 
@@ -737,39 +748,43 @@ import { Button } from "@/components/ui/button"
                     required
                   />
                 </div>
-                {/* Trường upload hình ảnh */}
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-images" className="text-right">
-                    Category
-                  </Label>
-                  <div className="col-span-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full text-left">
-                          {categories.find(c => c.id === formData.categoryId)?.name || "Select category"}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-full">
-                        {categories.map(cat => (
-                          cat.children && cat.children.length > 0 ? (
-                            <DropdownMenuSub key={cat.id}>
-                              <DropdownMenuSubTrigger>{cat.name}</DropdownMenuSubTrigger>
-                              <DropdownMenuSubContent>
-                                <DropdownMenuItem onClick={() => setFormData({ ...formData, categoryId: cat.id })}>{cat.name}</DropdownMenuItem>
-                                {cat.children.map((child: any) => (
-                                  <DropdownMenuItem key={child.id} onClick={() => setFormData({ ...formData, categoryId: child.id })}>
-                                    {child.name}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                          ) : (
-                            <DropdownMenuItem key={cat.id} onClick={() => setFormData({ ...formData, categoryId: cat.id })}>{cat.name}</DropdownMenuItem>
-                          )
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                {/* Hiển thị ảnh hiện tại và chức năng xóa ảnh */}
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right pt-2">Images</Label>
+                  <div className="col-span-3 flex flex-wrap gap-2">
+                    {editingProduct?.images && editingProduct.images.length > 0 ? (
+                      editingProduct.images.map((img, idx) => (
+                        <div key={img} className="relative w-20 h-20 border rounded overflow-hidden flex items-center justify-center">
+                          <img src={img} alt={`product-img-${idx}`} className="object-cover w-full h-full" />
+                          <button
+                            type="button"
+                            className="absolute top-0 right-0 bg-red-500 text-white rounded-bl px-1 py-0.5 text-xs hover:bg-red-700"
+                            onClick={() => handleDeleteProductImage(editingProduct.id, img)}
+                          >
+                            X
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground text-xs">No images</span>
+                    )}
                   </div>
+                </div>
+                {/* Upload thêm ảnh mới */}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-images" className="text-right">Add Images</Label>
+                  <Input
+                    id="edit-images"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="col-span-3"
+                    onChange={e => {
+                      if (e.target.files) {
+                        setImageFiles(Array.from(e.target.files))
+                      }
+                    }}
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-isFeatured" className="text-right">

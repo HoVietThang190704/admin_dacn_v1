@@ -14,6 +14,8 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
+import { useEffect, useState } from "react"
+import { apiClient } from "@/lib/api"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,15 +32,100 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { ChangeEvent } from "react"
+import { Button } from "@/components/ui/button"
+
+export function NavUser({ user }: { user?: { name: string; email: string; avatar: string } }) {
+  const [profile, setProfile] = useState<{ name: string; email: string; avatar: string; phone?: string; dateOfBirth?: string }>({ name: "", email: "", avatar: "" })
+  const [editOpen, setEditOpen] = useState(false)
+  const [editData, setEditData] = useState<{ name: string; avatar: string; phone: string; dateOfBirth: string }>({ name: "", avatar: "", phone: "", dateOfBirth: "" })
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState("")
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const res = await apiClient.getCurrentUserProfile()
+        if (res.success && res.data) {
+          setProfile({
+            name: res.data.userName || res.data.name || "",
+            email: res.data.email || "",
+            avatar: res.data.avatar || "",
+          })
+        }
+      } catch {
+        setProfile({ name: "Admin", email: "admin@example.com", avatar: "" })
+      }
+    }
+    fetchProfile()
+  }, [])
+
+  // Xử lý upload avatar
+  const handleAvatarFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Tạo formData để upload
+    const formData = new FormData()
+    formData.append("avatar", file)
+    try {
+      // Gọi API upload avatar (ví dụ: /uploads/avatar hoặc /upload)
+      // Đổi endpoint cho đúng backend nếu cần
+      const res = await fetch("http://localhost:5000/api/users/me/avatar", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}`
+        },
+        body: formData
+      })
+      const data = await res.json()
+      if (data.success && data.url) {
+        setEditData(ed => ({ ...ed, avatar: data.url }))
+      }
+    } catch {
+      setErrorMsg("Upload avatar thất bại")
+    }
   }
-}) {
+
+  const handleEdit = () => {
+    setEditData({
+      name: profile.name,
+      avatar: profile.avatar,
+      phone: profile.phone || "",
+      dateOfBirth: profile.dateOfBirth || ""
+    })
+    setEditOpen(true)
+  }
+
+  const handleSave = async () => {
+    setLoading(true)
+    setErrorMsg("")
+    try {
+      // Chỉ gửi các trường có giá trị
+      const payload: any = {}
+      if (editData.name) payload.userName = editData.name
+      if (editData.avatar) payload.avatar = editData.avatar
+      if (editData.phone) payload.phone = editData.phone
+      if (editData.dateOfBirth) payload.dateOfBirth = editData.dateOfBirth
+
+      const res = await apiClient.updateCurrentUserProfile(payload)
+      if (res.success && res.data) {
+        setProfile({
+          name: res.data.userName || res.data.name || "",
+          email: res.data.email || "",
+          avatar: res.data.avatar || "",
+          phone: res.data.phone || "",
+          dateOfBirth: res.data.dateOfBirth || ""
+        })
+        setEditOpen(false)
+      } else {
+        setErrorMsg(res.message || "Cập nhật thất bại")
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Cập nhật thất bại")
+    }
+    setLoading(false)
+  }
   const { isMobile } = useSidebar()
 
   return (
@@ -51,12 +138,12 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage src={profile.avatar} alt={profile.name} />
                 <AvatarFallback className="rounded-lg">AD</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-semibold">{profile.name}</span>
+                <span className="truncate text-xs">{profile.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -70,12 +157,12 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={profile.avatar} alt={profile.name} />
                   <AvatarFallback className="rounded-lg">AD</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-semibold">{profile.name}</span>
+                  <span className="truncate text-xs">{profile.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -88,7 +175,7 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleEdit}>
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
@@ -103,7 +190,6 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => {
-              // For demo, just redirect to login
               window.location.href = '/login'
             }}>
               <LogOut />
@@ -112,6 +198,52 @@ export function NavUser({
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
+      {/* Dialog chỉnh sửa hồ sơ */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa hồ sơ cá nhân</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {errorMsg && (
+              <div className="text-red-500 text-sm font-medium mb-2">{errorMsg}</div>
+            )}
+            <div className="flex flex-col gap-2">
+              <label htmlFor="name" className="font-medium">Tên hiển thị</label>
+              <Input id="name" value={editData.name} onChange={e => setEditData({ ...editData, name: e.target.value })} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="phone" className="font-medium">Số điện thoại</label>
+              <Input id="phone" value={editData.phone} onChange={e => setEditData({ ...editData, phone: e.target.value })} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="dateOfBirth" className="font-medium">Ngày sinh</label>
+              <Input
+                id="dateOfBirth"
+                type="date"
+                value={editData.dateOfBirth}
+                onChange={e => {
+                  // Đảm bảo format yyyy-mm-dd
+                  const val = e.target.value
+                  setEditData({ ...editData, dateOfBirth: val })
+                }}
+                placeholder="yyyy-mm-dd"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="avatar" className="font-medium">Avatar</label>
+              <Input id="avatar" value={editData.avatar} onChange={e => setEditData({ ...editData, avatar: e.target.value })} placeholder="Dán URL hoặc chọn file" />
+              <input type="file" accept="image/*" onChange={handleAvatarFile} className="mt-2" />
+              {editData.avatar && (
+                <img src={editData.avatar} alt="Avatar preview" className="w-16 h-16 rounded-full mt-2 border" />
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSave} disabled={loading}>{loading ? "Đang lưu..." : "Lưu thay đổi"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarMenu>
   )
 }

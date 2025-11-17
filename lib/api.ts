@@ -1,7 +1,16 @@
-// ...existing code...
-// API client for BE_DACN_v1 backend
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 class ApiClient {
+    // Cập nhật hồ sơ người dùng hiện tại
+    async updateCurrentUserProfile(data: any) {
+      return this.request('/users/me/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      })
+    }
+  // Lấy thông tin hồ sơ người dùng hiện tại
+  async getCurrentUserProfile() {
+    return this.request('/users/me/profile')
+  }
     // Assign ticket to agent (admin only)
     async assignTicket(id: string, agentId: string) {
       return this.request(`/tickets/${id}/assign`, {
@@ -45,6 +54,27 @@ class ApiClient {
       throw new Error(`API Error: ${response.status} ${response.statusText}`)
     }
     return response.json()
+  }
+  // Xóa ảnh sản phẩm
+  async deleteProductImage(productId: string, imageUrl: string) {
+    const url = `${this.baseURL}/products/${productId}/images`;
+    const token = localStorage.getItem('admin_token');
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageUrl }),
+    });
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
   }
   private baseURL: string
 
