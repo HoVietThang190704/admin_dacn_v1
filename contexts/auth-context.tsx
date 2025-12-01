@@ -12,6 +12,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<void>
+  refreshAccessToken: () => Promise<boolean>
   logout: () => void
   isLoading: boolean
 }
@@ -25,14 +26,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check if user is logged in on mount
     const token = localStorage.getItem('admin_token')
+    const refreshToken = localStorage.getItem('admin_refresh_token')
     if (token) {
-      // For demo purposes, set a mock user
       setUser({
         id: '1',
         email: 'admin@example.com',
         userName: 'Admin User',
         role: 'admin'
       })
+    } else if (refreshToken) {
+      // Try to refresh access token automatically
+      refreshAccessToken().then((success) => {
+        if (success) {
+          setUser({
+            id: '1',
+            email: 'admin@example.com',
+            userName: 'Admin User',
+            role: 'admin'
+          })
+        }
+        setIsLoading(false)
+      })
+      return
     }
     setIsLoading(false)
   }, [])
@@ -40,17 +55,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      // In a real app, this would call the API
-      // For demo, accept any email/password
-      const mockUser: User = {
-        id: '1',
-        email,
-        userName: 'Admin User',
-        role: 'admin'
-      }
-
-      localStorage.setItem('admin_token', 'mock_token')
-      setUser(mockUser)
+      // Gọi API đăng nhập backend
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+      if (!response.ok) throw new Error('Login failed')
+      const result = await response.json()
+      // Lưu token thật
+      localStorage.setItem('admin_token', result.accessToken)
+      localStorage.setItem('admin_refresh_token', result.refreshToken)
+      setUser(result.user)
     } catch (error) {
       throw new Error('Login failed')
     } finally {
@@ -58,13 +74,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Hàm tự động refresh access token
+  const refreshAccessToken = async (): Promise<boolean> => {
+    const refreshToken = localStorage.getItem('admin_refresh_token')
+    if (!refreshToken) return false
+    try {
+      // Replace with real API call
+      // const response = await fetch('/api/refresh', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ refreshToken })
+      // })
+      // const { accessToken, refreshToken: newRefreshToken } = await response.json()
+      // For demo, always succeed
+      localStorage.setItem('admin_token', 'mock_token_new')
+      // localStorage.setItem('admin_refresh_token', newRefreshToken)
+      return true
+    } catch {
+      logout()
+      return false
+    }
+  }
+
   const logout = () => {
     localStorage.removeItem('admin_token')
+    localStorage.removeItem('admin_refresh_token')
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, refreshAccessToken }}>
       {children}
     </AuthContext.Provider>
   )
